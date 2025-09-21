@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+pymongo
+pillow
+imagehash
+python-multipart
+tensorflow
