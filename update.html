@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Teste de Reconhecimento</title>
+</head>
+<body>
+  <h1>Enviar Foto para Reconhecimento</h1>
+  <form action="http://192.168.0.11:8000/reconhecer" method="post" enctype="multipart/form-data">
+    <input type="file" name="file" accept="image/*" capture="environment">
+    <button type="submit">Enviar</button>
+  </form>
+</body>
+</html>

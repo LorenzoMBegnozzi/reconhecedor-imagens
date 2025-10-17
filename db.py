@@ -8,5 +8,6 @@ try:
 except Exception as e:
     print("❌ Erro ao conectar ao MongoDB:", e)
 
-db = client["reconhecedor"]
-col = db["imagens"]
+db = client["hotwheels"]
+col = db["hotwheels"]
+
