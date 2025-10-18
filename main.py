@@ -29,12 +29,11 @@ async def listar():
     for doc in col.find():
         imagens.append({
             "id": str(doc["_id"]),
-            "nome": doc.get("name"),
+            "nome": doc.get("nome") or doc.get("name"), 
             "imagem": doc.get("imageUrl"),
             "ano": doc.get("year")
         })
     return {"status": "ok", "total": len(imagens), "imagens": imagens}
-
 
 @app.get("/imagem/{nome}")
 async def get_imagem(nome: str):
