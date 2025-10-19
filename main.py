@@ -45,69 +45,6 @@ async def get_imagem(nome: str):
     file_bytes = fs.get(doc["file_id"]).read()
     return StreamingResponse(io.BytesIO(file_bytes), media_type="image/jpeg")
 
-@app.get("/galeria", response_class=HTMLResponse)
-async def galeria():
-    imagens = list(col.find())
-
-    html = """
-    <!DOCTYPE html>
-    <html lang="pt-BR">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Galeria de Imagens</title>
-        <style>
-            body { font-family: Arial, sans-serif; text-align: center; background: #fafafa; margin: 20px; }
-            h2 { color: #333; }
-            .grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; margin-top: 20px; }
-            .card {
-                width: 200px; 
-                background: white; 
-                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-                border-radius: 10px; 
-                overflow: hidden;
-                transition: transform 0.2s;
-            }
-            .card:hover { transform: scale(1.05); }
-            img { width: 100%; height: 150px; object-fit: cover; }
-            .info { padding: 10px; }
-            .nome { font-weight: bold; color: #444; font-size: 14px; }
-            .ano { color: #777; font-size: 12px; }
-        </style>
-    </head>
-    <body>
-        <h2>🚗 Galeria de Imagens Cadastradas</h2>
-        <div class="grid">
-    """
-
-    for doc in imagens:
-        nome = doc.get("name") or doc.get("nome") or "Sem nome"
-        ano = doc.get("year", "—")
-        if "imageUrl" in doc:
-            img_url = doc["imageUrl"]
-        elif "file_id" in doc:
-            img_url = f"/imagem/{doc['nome']}"
-        else:
-            img_url = "https://via.placeholder.com/200x150?text=Sem+Imagem"
-
-        html += f"""
-        <div class="card">
-            <img src="{img_url}" alt="{nome}">
-            <div class="info">
-                <div class="nome">{nome}</div>
-                <div class="ano">{ano}</div>
-            </div>
-        </div>
-        """
-
-    html += """
-        </div>
-    </body>
-    </html>
-    """
-
-    return HTMLResponse(content=html)
-
 @app.get("/app", response_class=HTMLResponse)
 async def app_page():
     return """
