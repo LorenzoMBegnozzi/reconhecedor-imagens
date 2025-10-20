@@ -1,27 +1,23 @@
 from fastapi import FastAPI, UploadFile, File, Form
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, StreamingResponse
 from utils import salvar_imagem, reconhecer_imagem
 from models import Resultado
 from db import col  # coleção "imagens"
-from fastapi.responses import StreamingResponse
-
+import io
 
 app = FastAPI(title="Reconhecedor de Imagens")
 
-
 @app.post("/cadastrar", response_model=Resultado)
 async def cadastrar(nome: str = Form(...), file: UploadFile = File(...)):
-    file_bytes = await file.read()  # pega os bytes direto do UploadFile
+    file_bytes = await file.read()
     salvar_imagem(nome, file_bytes)
     return {"status": "ok", "mensagem": f"Imagem {nome} cadastrada com sucesso!"}
-
 
 @app.post("/reconhecer", response_model=Resultado)
 async def reconhecer(file: UploadFile = File(...)):
     file_bytes = await file.read()
     resultado = reconhecer_imagem(file_bytes)
     return resultado
-
 
 @app.get("/listar")
 async def listar():
@@ -37,11 +33,9 @@ async def listar():
 
 @app.get("/imagem/{nome}")
 async def get_imagem(nome: str):
-    """Retorna a imagem armazenada no MongoDB pelo nome."""
     doc = col.find_one({"nome": nome})
     if not doc or "file_id" not in doc:
         return {"erro": "Imagem não encontrada"}
-
     file_bytes = fs.get(doc["file_id"]).read()
     return StreamingResponse(io.BytesIO(file_bytes), media_type="image/jpeg")
 
@@ -57,11 +51,26 @@ async def app_page():
         <style>
             body { 
                 font-family: Arial, sans-serif; 
-                margin: 20px; 
+                margin: 0; 
+                padding: 20px; 
+                background: linear-gradient(135deg, #f0f4ff, #e0f7fa);
                 text-align: center; 
-                background: #f7f7f7;
             }
-            h2 { color: #333; }
+
+            h2 { 
+                color: #333; 
+                margin-bottom: 20px;
+            }
+
+            input { 
+                margin: 5px; 
+                padding: 10px; 
+                width: 80%; 
+                max-width: 400px;
+                border-radius: 8px;
+                border: 1px solid #ccc;
+            }
+
             button { 
                 margin: 10px; 
                 padding: 12px 18px; 
@@ -69,33 +78,83 @@ async def app_page():
                 cursor: pointer; 
                 border: none;
                 border-radius: 8px;
-                background-color: #007bff;
+                background: linear-gradient(90deg, #007bff, #00c6ff);
                 color: white;
+                transition: all 0.3s ease;
             }
-            button:hover { background-color: #0056b3; }
+
+            button:hover { 
+                background: linear-gradient(90deg, #0056b3, #0096c7);
+                transform: translateY(-2px);
+                box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            }
+
             #mensagem { 
-                margin-top: 20px; 
+                margin-top: 25px; 
                 font-weight: bold; 
                 white-space: pre-wrap; 
                 text-align: center; 
             }
-            input { margin: 5px; padding: 10px; width: 80%; }
-            #preview { margin-top: 15px; }
-            img { border-radius: 10px; }
-            .container { 
-                display: flex; 
-                justify-content: center; 
-                align-items: flex-start; 
-                gap: 25px; 
-                flex-wrap: wrap;
-                margin-top: 20px;
+
+            #preview { 
+                margin-top: 15px; 
             }
+
+            #preview img {
+                border-radius: 12px;
+                max-width: 200px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            }
+
+            /* Container dos cards em coluna */
+            .container {
+                display: flex;
+                flex-direction: column; /* cards empilhados verticalmente */
+                align-items: center;
+                gap: 20px;
+                margin-top: 25px;
+            }
+
             .card {
-                border: 1px solid #ccc; 
-                padding: 10px; 
-                border-radius: 10px; 
-                background: white;
-                box-shadow: 0 0 10px rgba(0,0,0,0.1);
+                background: linear-gradient(145deg, #ffffff, #e6f0ff);
+                border-radius: 15px;
+                box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+                padding: 15px;
+                width: 80%;          /* largura maior */
+                max-width: 400px;    /* limita para telas grandes */
+                text-align: center;
+                transition: transform 0.3s ease, box-shadow 0.3s ease;
+                cursor: pointer;
+            }
+
+            .card:hover {
+                transform: translateY(-5px) scale(1.03);
+                box-shadow: 0 12px 30px rgba(0,0,0,0.25);
+            }
+
+            .card img {
+                width: 80%;
+                border-radius: 12px;
+                margin-bottom: 10px;
+                object-fit: cover;
+                transition: transform 0.3s ease;
+            }
+
+            .card img:hover {
+                transform: scale(1.05);
+            }
+
+            .card b {
+                display: block;
+                font-size: 16px;
+                margin-bottom: 6px;
+                color: #333;
+            }
+
+            .card p {
+                font-size: 14px;
+                margin: 2px 0;
+                color: #555;
             }
         </style>
     </head>
@@ -111,15 +170,14 @@ async def app_page():
         <div id="mensagem"></div>
 
         <script>
-            // Mostra preview da imagem enviada
             function previewImagem(event) {
                 const file = event.target.files[0];
                 if (file) {
                     const reader = new FileReader();
                     reader.onload = function(e) {
                         document.getElementById("preview").innerHTML = `
-                            <h3>🖼️ Imagem enviada:</h3>
-                            <img src="${e.target.result}" alt="Preview" width="200">
+                            <h3>Imagem enviada:</h3>
+                            <img src="${e.target.result}" alt="Preview">
                         `;
                     };
                     reader.readAsDataURL(file);
@@ -133,7 +191,6 @@ async def app_page():
                     document.getElementById("mensagem").innerText = "⚠️ Preencha o nome e selecione uma imagem.";
                     return;
                 }
-
                 const formData = new FormData();
                 formData.append("nome", nome);
                 formData.append("file", fileInput);
@@ -149,7 +206,6 @@ async def app_page():
                     document.getElementById("mensagem").innerText = "⚠️ Selecione uma imagem para reconhecer.";
                     return;
                 }
-
                 const formData = new FormData();
                 formData.append("file", fileInput);
 
@@ -162,10 +218,10 @@ async def app_page():
                     data.top3.forEach((item) => {
                         lista += `
                             <div class='card'>
-                                <img src="${item.url}" alt="${item.nome}" width="150"><br>
-                                <b>${item.nome}</b><br>
-                                Similaridade: ${(item.similaridade * 100).toFixed(1)}%<br>
-                                Diferença: ${(item.diferenca * 100).toFixed(1)}%
+                                <img src="${item.url}" alt="${item.nome}">
+                                <b>${item.nome}</b>
+                                <p>🔹 Similaridade: ${(item.similaridade * 100).toFixed(1)}%</p>
+                                <p>🔹 Diferença: ${(item.diferenca * 100).toFixed(1)}%</p>
                             </div>
                         `;
                     });

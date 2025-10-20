@@ -5,15 +5,11 @@ import io
 import numpy as np
 import cv2
 import requests
-from db import col  # sua coleção MongoDB
+from db import col
 
-
-# sistema de arquivos dentro do Mongo (para imagens cadastradas manualmente)
 fs = gridfs.GridFS(db)
 
-
 def salvar_imagem(nome: str, file_bytes: bytes):
-    """Salva a imagem no MongoDB (GridFS + coleção de metadados)."""
     file_id = fs.put(file_bytes, filename=nome)
     col.insert_one({"nome": nome, "file_id": file_id})
     print(f"✅ Imagem {nome} salva no MongoDB")
